@@ -1,111 +1,63 @@
 <?php
+require_once 'twitter_api.php';
+require_once 'regexp.php';
 
-$token = '1898376746-FeTIcgHExNlKcBNaNYAPdW4G3r8UmunEJWu9Mik';
-$token_secret = 'iAPsREv22YG9BItIIpF9DcF3K7qEiNT7qR1usTpvwfrsn';
-$consumer_key = '6lmomZLqZcBj4IEpKsoZAQqxk';
-$consumer_secret = 'LtnciTfGVJl5SmvqR6qqx8Xch5qrIYYFut408ChAerhD1oRbx2';
-
-$host = 'api.twitter.com';
-$method = 'GET';
-$path = '/1.1/statuses/user_timeline.json'; // api call path
-
-$query = array( // query parameters
-    'screen_name' => 'dreadisfat',
-    'count' => '15'
-);
-
-$oauth = array(
-    'oauth_consumer_key' => $consumer_key,
-    'oauth_token' => $token,
-    'oauth_nonce' => (string)mt_rand(), // a stronger nonce is recommended
-    'oauth_timestamp' => time(),
-    'oauth_signature_method' => 'HMAC-SHA1',
-    'oauth_version' => '1.0'
-);
-
-$oauth = array_map("rawurlencode", $oauth); // must be encoded before sorting
-$query = array_map("rawurlencode", $query);
-
-$arr = array_merge($oauth, $query); // combine the values THEN sort
-
-asort($arr); // secondary sort (value)
-ksort($arr); // primary sort (key)
-
-// http_build_query automatically encodes, but our parameters
-// are already encoded, and must be by this point, so we undo
-// the encoding step
-$querystring = urldecode(http_build_query($arr, '', '&'));
-
-$url = "https://$host$path";
-
-// mash everything together for the text to hash
-$base_string = $method."&".rawurlencode($url)."&".rawurlencode($querystring);
-
-// same with the key
-$key = rawurlencode($consumer_secret)."&".rawurlencode($token_secret);
-
-// generate the hash
-$signature = rawurlencode(base64_encode(hash_hmac('sha1', $base_string, $key, true)));
-
-// this time we're using a normal GET query, and we're only encoding the query params
-// (without the oauth params)
-$url .= "?".http_build_query($query);
-$url=str_replace("&amp;","&",$url); //Patch by @Frewuill
-
-$oauth['oauth_signature'] = $signature; // don't want to abandon all that work!
-ksort($oauth); // probably not necessary, but twitter's demo does it
-
-// also not necessary, but twitter's demo does this too
-function add_quotes($str) { return '"'.$str.'"'; }
-$oauth = array_map("add_quotes", $oauth);
-
-// this is the full value of the Authorization line
-$auth = "OAuth " . urldecode(http_build_query($oauth, '', ', '));
-
-// if you're doing post, you need to skip the GET building above
-// and instead supply query parameters to CURLOPT_POSTFIELDS
-$options = array( CURLOPT_HTTPHEADER => array("Authorization: $auth"),
-    //CURLOPT_POSTFIELDS => $postfields,
-    CURLOPT_HEADER => false,
-    CURLOPT_URL => $url,
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_SSL_VERIFYPEER => false);
-
-// do our business
-$feed = curl_init();
-curl_setopt_array($feed, $options);
-$json = curl_exec($feed);
-curl_close($feed);
-
-$twitter_data = json_decode($json);
-
-echo '<pre>';
-
-foreach ($twitter_data as $tw){
-    foreach ($tw as $key=>$t){
-        if($key =='user') {
-            foreach ($t as $k => $ttt) {
-                if ($k == 'name') {
-                    $names[] = $ttt;
-                }
-            }
+?>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+    <title>Document</title>
+    <style>
+        p{
+            text-align: left;
         }
-        if(is_object($t)) {
-            continue;
-        }else{
-            if($key =='text'){
-                $texts[] = $t;
-            }
-            if($key =='created_at'){
-                $created_at[] = $t;
-            }
+        .date{
+            text-align: center;
         }
-    }
-    for($i=0;$i<count($names);$i++){
-        echo "<p>$names[$i]</p>";
-        echo "<p>$texts[$i]</p>";
-        echo "<p>$created_at[$i]</p>";
-        echo "<br>";
-    }
+        .single-tweet{
+            padding-left: 10px;
+            text-align:center;
+            width:500px;
+            border: 1px solid black;
+            border-radius: 10px;
+            margin: auto;
+        }
+        img{
+            border-radius: 20px ;
+        }
+    </style>
+</head>
+<body>
 
-};
+    <div id="city" onChange="CityChange()">
+        <?php for($i=0;$i<count($names);$i++):?>
+            <div class="single-tweet">
+                <img src="<?=$images[$i]?>">
+                <a href="https://twitter.com/<?=$screen_names[$i]?>"><?=$names[$i]?></a>
+                <span>@<?=$screen_names[$i]?></span>
+                <p><?=link_it(twitter_it($texts[$i]))?></p>
+                <p class="date"><?=substr($created_at[$i],0,20)?></p>
+                <a href="https://twitter.com/<?=$names[$i]?>/status/<?=$source[$i]?>">View source</a>
+            </div>
+        <br>
+        <?php endfor; ?>
+    </div>
+    <DIV id="adress"></DIV>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script>
+        function CityChange()
+        {
+            $("#adress").html($("#city_"+$("#city").options[this.selectedIndex].value).html())
+        }
+
+    </script>
+</body>
+</html>
