@@ -10,7 +10,7 @@ $method = 'GET';
 $path = '/1.1/statuses/user_timeline.json'; // api call path
 
 $query = array( // в ключе 'screen_name' и 'count' указываются имя пользователя и кол-во(максимальное) твиттов
-    'screen_name' => 'dreadisfat',
+    'screen_name' => 'h3h3productions',
     'count' => '25'
 );
 
@@ -79,35 +79,70 @@ curl_close($feed);
 
 $twitter_data = json_decode($json);
 
-foreach ($twitter_data as $tw){
-    foreach ($tw as $key=>$t){
-        if($key =='user') {
-            foreach ($t as $k => $ttt) {
-                if ($k == 'name') {
-                    $names[] = $ttt;
-                }elseif($k =='screen_name'){
-                    $screen_names[] = $ttt;
-                }elseif($k =='profile_image_url'){
-                    $images[] = $ttt;
+
+$i=0;
+foreach ($twitter_data as $tweet_data) {
+    foreach ($tweet_data as $key => $data) {
+        if($key=='in_reply_to_screen_name')
+        {
+            $rt_reply[$i] =$data;
+        }
+        elseif ($key == 'entities'){
+            foreach($data as $key_=>$entity){
+                foreach ($entity as $key__=> $value) {
+                    foreach ($value as $index=> $name) {
+                        if($index =='screen_name'){
+                            $rt_screen_name[$i] = $name;
+                        }elseif ($index == 'name'){
+                            $rt_name[$i] = $name;
+                        }
+                    }
                 }
             }
         }
-        if(is_object($t)) {
+
+        elseif($key == 'user') {
+            foreach ($data as $key_ => $user) {
+                if ($key_ == 'name') {
+                    $names[] = $user;
+                } elseif ($key_ == 'screen_name') {
+                    $screen_names[] = $user;
+                } elseif ($key_ == 'profile_image_url') {
+                    $images[] = $user;
+                }
+            }
+        }
+
+        elseif($key == 'retweeted_status') {
+            foreach ($data as $key_ => $item) {
+                if ($key_ == 'user') {
+                    foreach ($item as $key__ => $tweet) {
+                        if ($key__ == 'profile_image_url') {
+                            $rt_image[$i] = $tweet;
+                        }elseif($key__ == 'screen_name'){
+                                $rt_name[$i] = $tweet;
+
+                        }
+                    }
+                }
+
+            }
+        }
+
+        elseif(is_object($data)) {
             continue;
-        }else{
-            if($key =='text'){
-                $texts[] = $t;
+        } else {
+            if ($key == 'text') {
+                $texts[] = $data;
             }
-            if($key =='created_at'){
-                $created_at[] = $t;
+            if ($key == 'created_at') {
+                $created_at[] = $data;
             }
-            if($key == 'id_str'){
-                $source[] = $t;
-            }
-            if($key =='user'){
-                var_dump($t);
+            if ($key == 'id_str') {
+                $source[] = $data;
             }
         }
     }
-};
+    $i++;
+}
 

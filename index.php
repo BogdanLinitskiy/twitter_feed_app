@@ -33,31 +33,36 @@ require_once 'regexp.php';
     </style>
 </head>
 <body>
+<div>
 
-    <div id="city" onChange="CityChange()">
+</div>
+    <div id="refresh">
         <?php for($i=0;$i<count($names);$i++):?>
             <div class="single-tweet">
-                <img src="<?=$images[$i]?>">
-                <a href="https://twitter.com/<?=$screen_names[$i]?>"><?=$names[$i]?></a>
-                <span>@<?=$screen_names[$i]?></span>
-                <p><?=link_it(twitter_it($texts[$i]))?></p>
-                <p class="date"><?=substr($created_at[$i],0,20)?></p>
-                <a href="https://twitter.com/<?=$names[$i]?>/status/<?=$source[$i]?>">View source</a>
+                <?php if(preg_match('/^RT/',$texts[$i])):?>
+                    <img src="<?=$rt_image[$i]?>">
+                    <a href="https://twitter.com/<?=$rt_name[$i]?>"><?=$rt_screen_name[$i]?></a>
+                    <span>@<?=$rt_name[$i]?></span>
+                    <p><?=link_it(twitter_it($texts[$i]))?></p>
+                    <p class="date"><?=substr($created_at[$i],0,20)?></p>
+                    <a href="https://twitter.com/<?=$names[$i]?>/status/<?=$source[$i]?>">View source</a>
+                <?php else:?>
+                    <img src="<?=$images[$i]?>">
+                    <a href="https://twitter.com/<?=$screen_names[$i]?>"><?=$names[$i]?></a>
+                    <span>@<?=$screen_names[$i]?></span>
+                    <p><?=link_it(twitter_it($texts[$i]))?></p>
+                    <p class="date"><?=substr($created_at[$i],0,20)?></p>
+                    <a href="https://twitter.com/<?=$names[$i]?>/status/<?=$source[$i]?>">View source</a>
+                <?php endif;?>
+
             </div>
         <br>
         <?php endfor; ?>
     </div>
-    <DIV id="adress"></DIV>
 
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
-    <script>
-        function CityChange()
-        {
-            $("#adress").html($("#city_"+$("#city").options[this.selectedIndex].value).html())
-        }
 
-    </script>
 </body>
 </html>
